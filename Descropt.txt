@@ -1,0 +1,78 @@
+# Step 1: Install the required libraries
+!pip install requests beautifulsoup4 pandas
+
+# Step 2: Import necessary libraries
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import re
+
+# Step 3: Read the CSV file directly from the GitHub raw URL
+url = "https://raw.githubusercontent.com/rpositivity/PythonProjects/main/Example.csv"  # Raw GitHub URL
+df = pd.read_csv(url)
+
+# Check if 'links' column exists
+if 'links' not in df.columns:
+    print("Error: 'links' column not found in the CSV file.")
+else:
+    # Step 4: Prepare to store the results
+    extracted_data = []
+
+    # Chrome-specific User-Agent to mimic a request from Chrome browser
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
+    }
+
+    # Step 5: Iterate over each link in the 'links' column
+    for index, row in df.iterrows():
+        url = row['links']
+        
+        try:
+            # Fetch the webpage content
+            response = requests.get(url, headers=headers)
+            
+            if response.status_code == 200:
+                # Parse the HTML content using BeautifulSoup
+                soup = BeautifulSoup(response.text, 'html.parser')
+                
+                # Extract product name (using <h1> tag)
+                product_name = soup.find('h1').text.strip() if soup.find('h1') else "Product Name Not Found"
+                
+                # Extract product description using the provided div class
+                description_tag = soup.find('div', class_=re.compile(r'ProductDescription__DetailsCardStyled'))
+                product_description = description_tag.text.strip() if description_tag else "Description Not Found"
+                
+                # Store the results
+                extracted_data.append({
+                    'URL': url,
+                    'Product Name': product_name,
+                    'Product Description': product_description
+                })
+                
+                print(f"Extracted data from: {url}")
+            
+            else:
+                print(f"Failed to retrieve the webpage: {url} (Status Code: {response.status_code})")
+        
+        except Exception as e:
+            print(f"An error occurred for URL {url}: {e}")
+    
+    # Step 6: Convert the extracted data into a DataFrame
+    result_df = pd.DataFrame(extracted_data)
+    
+    # Step 7: Save the results to a new CSV file
+    output_file = 'extracted_product_data.csv'
+    result_df.to_csv(output_file, index=False)
+    print(f"\nExtraction complete! Results saved to {output_file}")
+    
+    # Provide a link to download the file in Colab
+    from google.colab import files
+    files.download(output_file)
+
+
+Next 
+from google.colab import files
+files.download(output_file)
+
+Product 2
+
